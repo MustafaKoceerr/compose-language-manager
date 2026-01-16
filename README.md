@@ -37,6 +37,28 @@ For correct behavior **below Android 13**, you **must** add the following servic
 </service>
 ```
 
+### 3) `AppCompatActivity` (mandatory)
+
+This library relies on AndroidX AppCompat locale APIs. Your main entry activity **must** extend `AppCompatActivity` (not `ComponentActivity`).
+
+```kotlin
+class MainActivity : AppCompatActivity() {
+    // ...
+}
+```
+
+---
+
+### 4) AppCompat-based theme (mandatory)
+
+Because the activity must be `AppCompatActivity`, your app theme must also be based on an **AppCompat** parent theme (e.g., DayNight). Update your `styles.xml` like this:
+
+```xml
+<resources>
+    <style name="Theme.ExampleJitpackImpl" parent="Theme.AppCompat.DayNight.NoActionBar" />
+</resources>
+```
+
 ---
 
 ## Installation (JitPack)
