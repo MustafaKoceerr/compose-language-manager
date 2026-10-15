@@ -39,6 +39,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":language-manager-compose"))
     implementation(project(":language-manager-hilt"))
 
     implementation(libs.androidx.appcompat)
@@ -53,4 +54,8 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     ksp(libs.hilt.compiler)
+
+    testImplementation(project(":language-manager-testing"))
+    testImplementation(libs.junit)
+    testImplementation(libs.truth)
 }

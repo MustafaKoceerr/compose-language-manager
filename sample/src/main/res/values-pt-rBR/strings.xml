@@ -3,5 +3,5 @@
     <string name="app_name">Gerenciador de Idiomas</string>
     <string name="title">Idioma do app</string>
     <string name="greeting">Olá! Este texto está em português.</string>
-    <string name="system_default">Padrão do sistema</string>
+    <string name="system_default">Padrão do sistema (%1$s)</string>
 </resources>

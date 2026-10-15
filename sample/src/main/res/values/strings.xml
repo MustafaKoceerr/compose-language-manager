@@ -3,5 +3,5 @@
     <string name="app_name">Language Manager</string>
     <string name="title">App language</string>
     <string name="greeting">Hello! This text is in English.</string>
-    <string name="system_default">System default</string>
+    <string name="system_default">System default (%1$s)</string>
 </resources>

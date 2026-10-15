@@ -3,5 +3,5 @@
     <string name="app_name">Dil Yöneticisi</string>
     <string name="title">Uygulama dili</string>
     <string name="greeting">Merhaba! Bu metin Türkçe.</string>
-    <string name="system_default">Sistem varsayılanı</string>
+    <string name="system_default">Sistem varsayılanı (%1$s)</string>
 </resources>

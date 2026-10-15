@@ -25,12 +25,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mustafakoceerr.languagemanager.LanguageMode
+import com.mustafakoceerr.languagemanager.compose.rememberSystemLocale
+import com.mustafakoceerr.languagemanager.nativeDisplayName
 
-/** Language options offered by the sample. Labels are endonyms, so they are not translated. */
-private val customLanguages = listOf(
-    LanguageMode.Custom("en") to "English",
-    LanguageMode.Custom("tr") to "Türkçe",
-    LanguageMode.Custom("pt-BR") to "Português (Brasil)",
+/** Languages the sample ships resources for. */
+private val supportedLanguages = listOf(
+    LanguageMode.Custom("en"),
+    LanguageMode.Custom("tr"),
+    LanguageMode.Custom("pt-BR"),
 )
 
 @Composable
@@ -59,14 +61,19 @@ private fun LanguageContent(
             Text(stringResource(R.string.greeting), style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.height(16.dp))
             Column(Modifier.selectableGroup()) {
+                val systemLocale = rememberSystemLocale()
                 LanguageOption(
-                    label = stringResource(R.string.system_default),
+                    label = stringResource(
+                        R.string.system_default,
+                        LanguageMode.Custom(systemLocale.language).nativeDisplayName,
+                    ),
                     selected = selected == LanguageMode.SystemDefault,
                     onClick = { onSelect(LanguageMode.SystemDefault) },
                 )
-                customLanguages.forEach { (mode, label) ->
+                supportedLanguages.forEach { mode ->
                     LanguageOption(
-                        label = label,
+                        // Endonyms, so every option is readable by its speakers.
+                        label = mode.nativeDisplayName,
                         selected = selected == mode,
                         onClick = { onSelect(mode) },
                     )
