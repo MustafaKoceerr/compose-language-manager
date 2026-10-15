@@ -21,5 +21,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "ComposeLanguageManager"
 include(":language-manager")
+include(":language-manager-compose")
 include(":language-manager-hilt")
+include(":language-manager-testing")
 include(":sample")
