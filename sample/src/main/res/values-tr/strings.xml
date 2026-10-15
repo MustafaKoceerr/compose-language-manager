@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Dil Yöneticisi</string>
+    <string name="title">Uygulama dili</string>
+    <string name="greeting">Merhaba! Bu metin Türkçe.</string>
+    <string name="system_default">Sistem varsayılanı</string>
+</resources>
