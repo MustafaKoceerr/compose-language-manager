@@ -1,41 +1,14 @@
 plugins {
-    alias(libs.plugins.android.library)
-    `maven-publish`
+    alias(libs.plugins.languagemanager.android.library)
+    alias(libs.plugins.languagemanager.publish)
+    alias(libs.plugins.languagemanager.robolectric)
 }
 
 android {
     namespace = "com.mustafakoceerr.languagemanager"
-    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
         consumerProguardFiles("consumer-rules.pro")
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-        }
-    }
-
-    testOptions {
-        unitTests.isIncludeAndroidResources = true
-        unitTests.all {
-            // Robolectric's SDK 36 runtime reflects into JDK internals.
-            it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
-        }
-    }
-}
-
-kotlin {
-    explicitApi()
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -45,19 +18,7 @@ dependencies {
     api(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)
-    testImplementation(libs.androidx.test.core)
-    testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.robolectric)
     testImplementation(libs.truth)
     testImplementation(libs.turbine)
-}
-
-publishing {
-    publications {
-        register<MavenPublication>("release") {
-            artifactId = project.name
-            afterEvaluate { from(components["release"]) }
-        }
-    }
 }
