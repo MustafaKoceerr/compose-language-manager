@@ -37,6 +37,30 @@ the system settings.
 
 You don't need to add any manifest entries. The `AppLocalesMetadataHolderService` is merged in from the library.
 
+## Installation (JitPack)
+
+```kotlin
+// settings.gradle.kts
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }
+    }
+}
+```
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("com.github.MustafaKoceerr.compose-language-manager:language-manager:2.0.0")
+    // Optional Hilt integration (includes language-manager)
+    implementation("com.github.MustafaKoceerr.compose-language-manager:language-manager-hilt:2.0.0")
+}
+```
+
+To try an unreleased branch, use `<branch>-SNAPSHOT` as the version (e.g. `v2-rework-SNAPSHOT`).
+
 ## Modules
 
 | Module | Purpose |

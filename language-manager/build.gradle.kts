@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
+    `maven-publish`
 }
 
 android {
@@ -14,6 +15,12 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
     }
 
     testOptions {
@@ -44,4 +51,13 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.truth)
     testImplementation(libs.turbine)
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            artifactId = project.name
+            afterEvaluate { from(components["release"]) }
+        }
+    }
 }
