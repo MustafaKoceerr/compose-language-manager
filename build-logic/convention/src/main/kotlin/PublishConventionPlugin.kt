@@ -9,7 +9,7 @@ import org.gradle.kotlin.dsl.register
 
 /**
  * Publishes the release variant (with sources) of an Android library as `<group>:<project name>:<version>`.
- * Group and version come from the root `gradle.properties`; JitPack builds this via `publishToMavenLocal`.
+ * Group and version are set in the root build script; JitPack builds this via `publishToMavenLocal`.
  */
 class PublishConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
