@@ -1,5 +1,8 @@
 # Compose Language Manager
 
+[![CI](https://github.com/MustafaKoceerr/compose-language-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/MustafaKoceerr/compose-language-manager/actions/workflows/ci.yml)
+[![JitPack](https://jitpack.io/v/MustafaKoceerr/compose-language-manager.svg)](https://jitpack.io/#MustafaKoceerr/compose-language-manager)
+
 A lightweight Android library for **in-app (per-app) language switching**, built on the official platform APIs and
 exposed as a `StateFlow<LanguageMode>`. It doesn't depend on any DI framework. Hilt support comes in an optional module.
 
