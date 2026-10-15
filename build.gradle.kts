@@ -7,8 +7,3 @@ plugins {
     alias(libs.plugins.hilt.android) apply false
 }
 
-// JitPack coordinates for multi-module repositories: com.github.<user>.<repo>:<module>:<version>
-allprojects {
-    group = "com.github.MustafaKoceerr.compose-language-manager"
-    version = "2.1.0"
-}
