@@ -10,5 +10,5 @@ plugins {
 // JitPack coordinates for multi-module repositories: com.github.<user>.<repo>:<module>:<version>
 allprojects {
     group = "com.github.MustafaKoceerr.compose-language-manager"
-    version = "2.0.0"
+    version = "2.1.0"
 }

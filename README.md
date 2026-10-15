@@ -53,9 +53,12 @@ dependencyResolutionManagement {
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.MustafaKoceerr.compose-language-manager:language-manager:2.0.0")
-    // Optional Hilt integration (includes language-manager)
-    implementation("com.github.MustafaKoceerr.compose-language-manager:language-manager-hilt:2.0.0")
+    implementation("com.github.MustafaKoceerr.compose-language-manager:language-manager:2.1.0")
+
+    // Optional (each includes language-manager)
+    implementation("com.github.MustafaKoceerr.compose-language-manager:language-manager-compose:2.1.0")
+    implementation("com.github.MustafaKoceerr.compose-language-manager:language-manager-hilt:2.1.0")
+    testImplementation("com.github.MustafaKoceerr.compose-language-manager:language-manager-testing:2.1.0")
 }
 ```
 
@@ -66,7 +69,9 @@ To try an unreleased branch, use `<branch>-SNAPSHOT` as the version (e.g. `v2-re
 | Module | Purpose |
 |---|---|
 | `:language-manager` | Core API, no DI |
+| `:language-manager-compose` | Optional Compose helpers: `rememberLanguageMode()`, `rememberSystemLocale()`, preview support |
 | `:language-manager-hilt` | Optional Hilt module that provides `LanguageManager` as a singleton |
+| `:language-manager-testing` | `FakeLanguageManager` for unit tests and previews |
 | `:sample` | Compose demo app |
 
 ## API
@@ -89,6 +94,13 @@ public interface LanguageManager {
 
 `Custom` keeps the full language tag, including region and script. Tags read back are normalized by the platform, so
 `"pt-br"` is reported as `"pt-BR"`.
+
+### Display names
+
+```kotlin
+LanguageMode.Custom("pt-BR").nativeDisplayName        // "Português (Brasil)" — use in language pickers
+LanguageMode.Custom("tr").displayName(Locale.ENGLISH)  // "Turkish"
+```
 
 ## Usage
 
@@ -126,6 +138,38 @@ fun LanguageScreen(viewModel: LanguageViewModel = hiltViewModel()) {
 ```
 
 See [`sample`](sample/src/main/java/com/mustafakoceerr/languagemanager/sample) for a complete Compose screen.
+
+### Compose without DI (`language-manager-compose`)
+
+```kotlin
+@Composable
+fun LanguageSettings() {
+    val languageManager = rememberLanguageManager()
+    val languageMode by rememberLanguageMode(languageManager)
+    val systemLocale = rememberSystemLocale() // device language, ignoring the app override
+
+    // e.g. "System default (English)"
+    val systemLabel = "System default (${LanguageMode.Custom(systemLocale.language).nativeDisplayName})"
+    // render options, call languageManager.setLanguage(...)
+}
+```
+
+- `rememberLanguageManager()` returns the process-wide manager. In `@Preview` it returns an in-memory manager, so
+  previews don't touch platform APIs.
+- Use `LocalLanguageManager` to provide a different manager, e.g. a fake in UI tests:
+  `CompositionLocalProvider(LocalLanguageManager provides FakeLanguageManager()) { ... }`
+
+### Testing (`language-manager-testing`)
+
+```kotlin
+val languageManager = FakeLanguageManager(LanguageMode.Custom("tr"))
+val viewModel = LanguageViewModel(languageManager)
+
+viewModel.onLanguageSelected(LanguageMode.SystemDefault)
+assertThat(languageManager.setLanguageCalls).containsExactly(LanguageMode.SystemDefault)
+
+languageManager.simulateExternalChange(LanguageMode.Custom("pt-BR")) // e.g. changed in system settings
+```
 
 > Decide in your app which languages you support (for example with an app-owned enum) and map them to and from
 > `LanguageMode`. If you use use cases, they belong in your app's domain layer.
