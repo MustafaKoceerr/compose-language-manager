@@ -20,4 +20,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "ComposeLanguageManager"
-include(":core")
+include(":language-manager")
+include(":language-manager-hilt")
+include(":sample")

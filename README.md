@@ -1,330 +1,111 @@
 # Compose Language Manager
 
-A lightweight Android library that manages **in-app language switching** using AndroidX AppCompat’s locale APIs (`AppCompatDelegate.setApplicationLocales()`), exposed via a clean contract (`Flow<LanguageMode>`) and integrated with **Hilt** (implementation hidden).
+A lightweight Android library for **in-app (per-app) language switching**, built on the official platform APIs and
+exposed as a `StateFlow<LanguageMode>`. It doesn't depend on any DI framework. Hilt support comes in an optional module.
 
----
+## How it works
 
-## Features
+The library follows Google's [per-app language preferences](https://developer.android.com/guide/topics/resources/app-languages) guidance:
 
-- ✅ Switch between **System Default** and **Custom language** (language code)
-- ✅ Observe current language mode via `Flow<LanguageMode>`
-- ✅ Update language via a simple API (`setLanguage(code)`)
-- ✅ Persists language selection using AppCompat locales
-- ✅ Hilt module included (implementation remains internal)
+| API level | Mechanism | Persistence |
+|---|---|---|
+| 33+ (Android 13+) | Framework `LocaleManager` | Stored by the system, synced with *Settings > Apps > App languages* |
+| 24–32 | AppCompat backport `AppCompatDelegate.setApplicationLocales()` | AppCompat `autoStoreLocales` (declared by this library's manifest) |
 
----
+The choice is made at runtime behind an internal `LocaleController` abstraction. The system (or AppCompat) is the single
+source of truth: `languageMode` is re-read after every change and also reflects changes made outside the app, such as from
+the system settings.
 
-## Requirements (Must-Haves)
+## Requirements
 
-### 1) Hilt version (mandatory)
+- **minSdk 24**
+- **`AppCompatActivity`** with an AppCompat theme (e.g. `Theme.AppCompat.DayNight.NoActionBar`). The AppCompat backport
+  only applies locales to AppCompat activities on API < 33.
+- Recommended for API 33+: list your app's languages in the system settings:
 
-- **Hilt: 2.54+ is required (minimum).**
-- This library relies on the newer Hilt/KSP2-related setup introduced after 2.54.  
-  **Hilt versions below 2.54 are not supported and will not work.**
+  ```kotlin
+  // app/build.gradle.kts
+  android {
+      androidResources { generateLocaleConfig = true }
+  }
+  ```
 
-### 2) Android < 13 (mandatory manifest entry)
+  ```properties
+  # app/src/main/res/resources.properties
+  unqualifiedResLocale=en
+  ```
 
-For correct behavior **below Android 13**, you **must** add the following service to your app `AndroidManifest.xml`:
+You don't need to add any manifest entries. The `AppLocalesMetadataHolderService` is merged in from the library.
 
-```xml
-<service
-    android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
-    android:enabled="false"
-    android:exported="false">
-    <meta-data
-        android:name="autoStoreLocales"
-        android:value="true" />
-</service>
-```
+## Modules
 
-### 3) `AppCompatActivity` (mandatory)
+| Module | Purpose |
+|---|---|
+| `:language-manager` | Core API, no DI |
+| `:language-manager-hilt` | Optional Hilt module that provides `LanguageManager` as a singleton |
+| `:sample` | Compose demo app |
 
-This library relies on AndroidX AppCompat locale APIs. Your main entry activity **must** extend `AppCompatActivity` (not `ComponentActivity`).
-
-```kotlin
-class MainActivity : AppCompatActivity() {
-    // ...
-}
-```
-
----
-
-### 4) AppCompat-based theme (mandatory)
-
-Because the activity must be `AppCompatActivity`, your app theme must also be based on an **AppCompat** parent theme (e.g., DayNight). Update your `styles.xml` like this:
-
-```xml
-<resources>
-    <style name="Theme.ExampleJitpackImpl" parent="Theme.AppCompat.DayNight.NoActionBar" />
-</resources>
-```
-
----
-
-## Installation (JitPack)
-
-### 1) Add JitPack repository
-
-Add this to your `settings.gradle(.kts)`:
+## API
 
 ```kotlin
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        mavenCentral()
-        maven { url = uri("https://jitpack.io") }
-    }
-}
-```
-
-### 2) Add dependency
-
-```kotlin
-dependencies {
-    implementation("com.github.MustafaKoceerr:compose-language-manager:1.0.0")
-}
-```
-
----
-
-## Public API
-
-### `ILanguageManager`
-
-```kotlin
-interface ILanguageManager {
-    fun getLanguageMode(): Flow<LanguageMode>
-    suspend fun setLanguage(code: String?)
-}
-```
-
-### `LanguageMode`
-
-```kotlin
-sealed interface LanguageMode {
+public sealed interface LanguageMode {
     data object SystemDefault : LanguageMode
-    data class Custom(val code: String) : LanguageMode
+    data class Custom(val languageTag: String) : LanguageMode // BCP 47: "tr", "pt-BR"
 }
-```
 
-### Use Cases
-
-- `ObserveLanguageModeUseCase` → observes current language mode as `Flow<LanguageMode>`
-- `UpdateLanguageUseCase` → updates the language (`null` or empty → System Default)
-
----
-
-## How it Works
-
-- `setLanguage(null)` or `setLanguage("")` → reverts to **System Default**
-- `setLanguage("tr")` → sets a **Custom** language code
-- Current mode is derived from `AppCompatDelegate.getApplicationLocales()`
-- Changes are applied via `AppCompatDelegate.setApplicationLocales(...)`
-
----
-
-## Usage Example (Recommended Integration)
-
-Below is a practical example showing how to integrate the library into a **Compose + MVI** screen with clean mapping:
-
-- Library returns a **string code** (e.g., `"tr"`)
-- Your app maps it to an app-owned enum (`AppLanguage`)
-- Unknown codes (e.g., `"fr"`) are safely handled by falling back to **System Default**
-
-### AppLanguage.kt
-
-```kotlin
-package com.mustafakoceerr.languageapplication.domain.model
-
-enum class AppLanguage(val code: String) {
-    ENGLISH("en"),
-    TURKISH("tr");
+public interface LanguageManager {
+    val languageMode: StateFlow<LanguageMode>
+    @MainThread fun setLanguage(mode: LanguageMode)
 
     companion object {
-        // Convert string code (e.g., "tr") to your app enum
-        fun getByCode(code: String?): AppLanguage? {
-            return entries.find { it.code == code }
-        }
+        fun create(context: Context): LanguageManager // process-wide instance
     }
 }
 ```
 
-### LanguageSelection.kt
+`Custom` keeps the full language tag, including region and script. Tags read back are normalized by the platform, so
+`"pt-br"` is reported as `"pt-BR"`.
+
+## Usage
+
+### Without DI
 
 ```kotlin
-package com.mustafakoceerr.languageapplication.domain.model
+val languageManager = LanguageManager.create(context)
 
-sealed interface LanguageSelection {
-    data object SystemDefault : LanguageSelection
-    data class Custom(val language: AppLanguage) : LanguageSelection
-}
+languageManager.setLanguage(LanguageMode.Custom("tr"))
+languageManager.setLanguage(LanguageMode.SystemDefault)
 ```
 
-### LanguageContract.kt
+### With Hilt
+
+Add `:language-manager-hilt` and inject `LanguageManager`:
 
 ```kotlin
-package com.mustafakoceerr.languageapplication.mvi
-
-data class LanguageState(
-    val selection: LanguageSelection = LanguageSelection.SystemDefault,
-    val availableLanguages: List<AppLanguage> = AppLanguage.entries
-)
-
-sealed class LanguageIntent {
-    // null means "System Default"
-    data class SelectLanguage(val language: AppLanguage?) : LanguageIntent()
-}
-
-sealed class LanguageEffect
-```
-
-### LanguageScreen.kt
-
-```kotlin
-package com.mustafakoceerr.languageapplication.mvi
-
-@Composable
-fun LanguageScreen(
-    viewModel: LanguageViewModel = hiltViewModel()
-) {
-    val state by viewModel.state.collectAsState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.settings_title),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        // 1) System Default option
-        LanguageItem(
-            text = stringResource(R.string.system_default),
-            isSelected = state.selection is LanguageSelection.SystemDefault,
-            onClick = {
-                viewModel.handleIntent(LanguageIntent.SelectLanguage(null))
-            }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // 2) Supported languages
-        LazyColumn {
-            items(state.availableLanguages) { language ->
-
-                val isSelected = (state.selection as? LanguageSelection.Custom)?.language == language
-
-                LanguageItem(
-                    text = getLanguageName(language),
-                    isSelected = isSelected,
-                    onClick = {
-                        viewModel.handleIntent(LanguageIntent.SelectLanguage(language))
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun LanguageItem(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RadioButton(
-            selected = isSelected,
-            onClick = null
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = text, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Composable
-fun getLanguageName(language: AppLanguage): String {
-    return when (language) {
-        AppLanguage.ENGLISH -> stringResource(R.string.lang_english)
-        AppLanguage.TURKISH -> stringResource(R.string.lang_turkish)
-    }
-}
-```
-
-### LanguageViewModel.kt
-
-```kotlin
-package com.mustafakoceerr.languageapplication.mvi
-
 @HiltViewModel
 class LanguageViewModel @Inject constructor(
-    private val observeLanguageModeUseCase: ObserveLanguageModeUseCase,
-    private val updateLanguageUseCase: UpdateLanguageUseCase
+    private val languageManager: LanguageManager,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(LanguageState())
-    val state: StateFlow<LanguageState> = _state.asStateFlow()
+    val languageMode: StateFlow<LanguageMode> = languageManager.languageMode
 
-    init {
-        observeLanguageChanges()
-    }
-
-    fun handleIntent(intent: LanguageIntent) {
-        when (intent) {
-            is LanguageIntent.SelectLanguage -> changeLanguage(intent.language)
-        }
-    }
-
-    private fun observeLanguageChanges() {
-        viewModelScope.launch {
-            observeLanguageModeUseCase().collect { mode ->
-                // Mapping: Library (LanguageMode) -> App (LanguageSelection)
-                val selection = when (mode) {
-                    is LanguageMode.SystemDefault -> LanguageSelection.SystemDefault
-                    is LanguageMode.Custom -> {
-                        val appLanguage = AppLanguage.getByCode(mode.code)
-                        if (appLanguage != null) {
-                            LanguageSelection.Custom(appLanguage)
-                        } else {
-                            // Unknown code (e.g., library returns "fr" but app doesn't support it)
-                            LanguageSelection.SystemDefault
-                        }
-                    }
-                }
-                _state.update { it.copy(selection = selection) }
-            }
-        }
-    }
-
-    private fun changeLanguage(language: AppLanguage?) {
-        viewModelScope.launch {
-            // Mapping: App (Enum) -> Library (String Code)
-            updateLanguageUseCase(language?.code)
-        }
-    }
+    fun onLanguageSelected(mode: LanguageMode) = languageManager.setLanguage(mode)
 }
 ```
 
----
+```kotlin
+@Composable
+fun LanguageScreen(viewModel: LanguageViewModel = hiltViewModel()) {
+    val languageMode by viewModel.languageMode.collectAsStateWithLifecycle()
+    // render options, call viewModel.onLanguageSelected(...)
+}
+```
 
-## Notes
+See [`sample`](sample/src/main/java/com/mustafakoceerr/languagemanager/sample) for a complete Compose screen.
 
-- Passing `null` (or an empty string) to `setLanguage(...)` is the canonical way to revert to **System Default**.
-- The recommended approach is to **own supported languages in the app** (e.g., `AppLanguage`) and map to/from the library’s string codes.
-
----
+> Decide in your app which languages you support (for example with an app-owned enum) and map them to and from
+> `LanguageMode`. If you use use cases, they belong in your app's domain layer.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See [LICENSE.txt](LICENSE.txt) for details.
